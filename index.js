@@ -34,10 +34,10 @@ io.on('connect', socket => {
         console.log('clientName.......',clientName)
         dbLogic.createClient(clientName, socket.id)
             .then( client => {
+                socket.emit('assigned name', client.name)
                 socket.join(selectedRoom, ()=> {
                     dbLogic.updateRoom(selectedRoom, client._id, isLeader)
                         .then( (res) => {
-                            console.log(res)
                             socket.emit('joined', Object.keys(socket.rooms))
                             socket.to(selectedRoom).emit('new client', {client})
                         })
