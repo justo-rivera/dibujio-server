@@ -19,6 +19,9 @@ const createClient = (clientName, socket) => {
         )
         .catch( err => console.error(err))
 }
+const deleteClient = (name) => {
+    return ClientModel.deleteMany({name})
+}
     
 
 module.exports = { updateRoom, createClient }

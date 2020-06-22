@@ -51,5 +51,8 @@ io.on('connect', socket => {
         socket.to(socketTo).emit('signal', signal, clientName, socket.id)
     })
 })
+io.on("disconnect", socket => {
+    dbLogic.deleteClient(socket.clientName)
+})
 
 module.exports = app
