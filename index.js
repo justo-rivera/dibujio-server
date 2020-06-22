@@ -1,3 +1,4 @@
+require('dotenv').config()
 const express = require('express')
 const mongoose = require('mongoose')
 mongoose.set('useFindAndModify', false)
@@ -17,7 +18,7 @@ app.use(express.urlencoded({ extended: true }))
 app.use("/api", apiRoutes)
 
 const server = app.listen(process.env.PORT, () => {
-    console.log('Server is running')
+    console.log('Server is running on ',process.env.PORT)
 })
 
 const dbLogic = require('./logic/dbLogic')

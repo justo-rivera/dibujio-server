@@ -8,7 +8,15 @@ const updateRoom = (roomName, clientId, changeLeader) => {
     return RoomModel.findOneAndUpdate({name: roomName}, updateQuery, {new: true, upsert: true})
 }
 const createClient = (clientName, socket) => {
-    return ClientModel.create({name: clientName, socket})
+    const pattern = `/${clientName}/`
+    ClientModel.count({name: pattern})
+        .then( (sameNames) => {
+            if(sameNames>0) clientName+=sameNames
+            return ClientModel.create({name: clientName, socket})
+        }
+        )
+        .catch( err => console.error(err))
 }
+    
 
 module.exports = { updateRoom, createClient }
