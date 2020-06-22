@@ -53,6 +53,8 @@ io.on('connect', socket => {
 })
 io.on("disconnect", socket => {
     dbLogic.deleteClient(socket.clientName)
+        .then( res => console.log(res) )
+        .catch( err => console.error(err) )
 })
 
 module.exports = app
