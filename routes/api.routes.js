@@ -12,6 +12,7 @@ router.get('/rooms', (req, res) => {
 router.get('/room/:roomName', (req, res) => {
     RoomModel.findOne({name: req.params.roomName})
         .populate('clients')
+        .populate('leader')
         .then( room => {
             console.log('searching for......', room)
             res.send( room )

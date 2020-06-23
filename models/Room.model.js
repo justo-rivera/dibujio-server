@@ -11,6 +11,10 @@ const roomSchema = new Schema(
             type: Schema.Types.ObjectId,
             ref: 'Client'
         },
+        isPlaying: {
+            type: Boolean,
+            default: false
+        },
         clients: [{
             type: Schema.Types.ObjectId,
             ref: 'Client'

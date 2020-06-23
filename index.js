@@ -22,18 +22,19 @@ const server = app.listen(process.env.PORT, () => {
 })
 
 const dbLogic = require('./logic/dbLogic')
+const { db } = require('./models/Room.model')
 const io = require('socket.io')(server)
 
 
 io.on('connect', socket => {
     socket.emit('welcome', { greet: 'hello there'})
     socket.on('join room', ({selectedRoom, clientName, isLeader}) => {
-        socket.clientName = clientName
         socket.selectedRoom = selectedRoom
-        socket.isLeader = isLeader
         console.log('clientName.......',clientName)
         dbLogic.createClient(clientName, socket.id)
             .then( client => {
+                socket.clientName = client.name
+                socket.clientId = client._id
                 socket.emit('assigned name', client.name)
                 socket.join(selectedRoom, ()=> {
                     dbLogic.updateRoom(selectedRoom, client._id, isLeader)
@@ -50,11 +51,46 @@ io.on('connect', socket => {
         console.log(socketTo)
         socket.to(socketTo).emit('signal', signal, clientName, socket.id)
     })
+    socket.on('2 clients connected', clients => {
+        startRoom(socket.selectedRoom)
+    })
+    socket.on('disconnect', () => {
+        console.log('disconnecting ', socket.clientId)
+        dbLogic.deleteClient(socket.clientId)
+        .then( res => console.log(res) )
+        .catch( err => console.error(err) )
+    })
 })
 io.on("disconnect", socket => {
-    dbLogic.deleteClient(socket.clientName)
+    dbLogic.deleteClient(socket.clientId)
         .then( res => console.log(res) )
         .catch( err => console.error(err) )
 })
+const sendNewLeader = (room) => {
+    dbLogic.newLeader(room)
+        .then( updatedRoom => {
+            console.log('updatedRoom: ',updatedRoom)
+            const nowTime = new Date()
+            const timeFinish = new Date(nowTime.getTime() + 30 * 1000)
+            io.to(room).emit('new leader', updatedRoom.leader.name)
+            io.to(room).emit('finish time', timeFinish)
+            console.log(timeFinish)
+            setTimeout(() => {sendNewLeader(room)}, 30 * 1000)
+        })
+        .catch( err => console.error(err))
 
+}
+const startRoom = (room) => {
+    dbLogic.isRoomPlaying(room)
+    .then( foundRoom => {
+        if(!foundRoom.isPlaying){
+            dbLogic.startRoom(room)
+                .then( () => {
+
+                io.to(room).emit('game starts')
+                sendNewLeader(room)
+                })
+        }
+    })
+}
 module.exports = app
