@@ -9,7 +9,7 @@ const updateRoom = (roomName, clientId, changeLeader) => {
     return RoomModel.findOneAndUpdate({name: roomName}, updateQuery, {new: true, upsert: true, setDefaultsOnInsert: true})
 }
 const createClient = (clientName, socket) => {
-    const pattern = `^${clientName}`
+    const pattern = `^${clientName}[0-9]*`
     console.log(pattern)
     return ClientModel.countDocuments({name: {$regex: pattern}})
         .then( (sameNames) => {
@@ -44,6 +44,16 @@ const isRoomPlaying = (roomName) => {
 const startRoom = (roomName) => {
     return RoomModel.update({name: roomName}, {$set: {isPlaying: true}})
 }
+const getLeader = (roomName) => {
+    return RoomModel.findOne({name: roomName}, 'leader').populate('leader')
+}
+const setWord = (word, roomName) => {
+    console.log('RoomModel.updateOne({name: ',roomName,'}, {$set: {word: ',word,'}})')
+    return RoomModel.updateOne({name: roomName}, {$set: {word: word}})
+}
+const getWord = (roomName) => {
+    return RoomModel.findOne({name: roomName}, 'word')
+}
     
 
-module.exports = { updateRoom, createClient, deleteClient, newLeader, isRoomPlaying, startRoom }
+module.exports = { updateRoom, createClient, deleteClient, newLeader, isRoomPlaying, startRoom, getLeader, setWord, getWord }

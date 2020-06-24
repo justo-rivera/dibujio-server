@@ -7,13 +7,17 @@ const roomSchema = new Schema(
             required: true,
             unique: true
         },
+        isPlaying: {
+            type: Boolean,
+            default: false
+        },
         leader: {
             type: Schema.Types.ObjectId,
             ref: 'Client'
         },
-        isPlaying: {
-            type: Boolean,
-            default: false
+        word: {
+            type: String,
+            default: ''
         },
         clients: [{
             type: Schema.Types.ObjectId,

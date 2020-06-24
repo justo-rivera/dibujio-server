@@ -1,4 +1,8 @@
 require('dotenv').config()
+
+const words = require('./data/words.json')
+const wordsLength = words.length
+
 const express = require('express')
 const mongoose = require('mongoose')
 mongoose.set('useFindAndModify', false)
@@ -54,6 +58,21 @@ io.on('connect', socket => {
     socket.on('2 clients connected', clients => {
         startRoom(socket.selectedRoom)
     })
+    socket.on('chose word', word => {
+        setWord(socket.clientName, socket.selectedRoom, word)
+    })
+    socket.on('message', message =>{
+        dbLogic.getWord(socket.selectedRoom)
+            .then( ({word}) => {
+                if(word === message){
+                    io.in(socket.selectedRoom).emit('correct guess', socket.clientName)
+                }
+                else{
+                    console.log(word,'!==', message)
+                    io.in(socket.selectedRoom).emit('message', socket.clientName, message)
+                }
+            })
+    })
     socket.on('disconnect', () => {
         console.log('disconnecting ', socket.clientId)
         dbLogic.deleteClient(socket.clientId)
@@ -71,16 +90,32 @@ const sendNewLeader = (room) => {
         .then( updatedRoom => {
             console.log('updatedRoom: ',updatedRoom)
             const nowTime = new Date()
-            const timeFinish = new Date(nowTime.getTime() + 30 * 1000)
+            const timeFinish = new Date(nowTime.getTime() + 90 * 1000)
+            const threeWords = randomWords(3)
             io.to(room).emit('new leader', updatedRoom.leader.name)
             io.to(room).emit('finish time', timeFinish)
-            console.log(timeFinish)
-            setTimeout(() => {sendNewLeader(room)}, 30 * 1000)
+            io.to(updatedRoom.leader.socket).emit('choose word', threeWords)
+            setTimeout(() => {sendNewLeader(room)}, 90 * 1000)
         })
         .catch( err => console.error(err))
 
 }
+const setWord = (clientName, room, word) => {
+    dbLogic.getLeader(room)
+        .then( ({leader}) => {
+            if(leader.name === clientName){
+                dbLogic.setWord(word, room)
+                    .then( res => console.log(res))
+                    .catch( err => console.log(err))
+            }
+            else{
+                console.log('someone who is not a leader tried to set the word')
+            }
+        })
+        .catch( err => console.error(err) )
+}
 const startRoom = (room) => {
+    console.log('startRoom(',room,') called!')
     dbLogic.isRoomPlaying(room)
     .then( foundRoom => {
         if(!foundRoom.isPlaying){
@@ -92,5 +127,13 @@ const startRoom = (room) => {
                 })
         }
     })
+    .catch( err => console.error(err))
+}
+const randomWords = (returnLength) => {
+    const returnArray = []
+    for(let i = 0; i < returnLength; i++){
+        returnArray.push(words[Math.floor(Math.random() * wordsLength)])
+    }
+    return returnArray
 }
 module.exports = app
