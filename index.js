@@ -1,6 +1,6 @@
 require('dotenv').config()
 
-const words = require('./data/words.json')
+const words = require('./data/palabras.json')
 const wordsLength = words.length
 
 const express = require('express')
