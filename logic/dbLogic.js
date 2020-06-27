@@ -4,8 +4,6 @@ const mongoose = require('mongoose')
 
 const updateRoom = (roomName, clientId, changeLeader) => {
     const updateQuery = {$push: {clients: clientId}}
-    if(changeLeader) updateQuery.$set = {leader: clientId}
-    console.log(updateQuery,changeLeader)
     return RoomModel.findOneAndUpdate({name: roomName}, updateQuery, {new: true, upsert: true, setDefaultsOnInsert: true}).populate('leader').populate('clients')
 }
 const createClient = (clientName, socket) => {
