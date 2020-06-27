@@ -4,6 +4,8 @@ const mongoose = require('mongoose')
 
 const updateRoom = (roomName, clientId, changeLeader) => {
     const updateQuery = {$push: {clients: clientId}}
+    if(changeLeader) updateQuery.$set = {leader: clientId}
+    console.log(updateQuery,changeLeader)
     return RoomModel.findOneAndUpdate({name: roomName}, updateQuery, {new: true, upsert: true, setDefaultsOnInsert: true}).populate('leader').populate('clients')
 }
 const createClient = (clientName, socket) => {
@@ -30,12 +32,12 @@ const newLeader = (roomName) => {
         .populate('clients')
         .populate('leader')
         .then( room => {
-            console.log(room)
+            let leader;
             if(!room.leader){
-                const leader = room.clients[Math.floor(Math.random() * room.clients.length)]._id
+                leader = room.clients[Math.floor(Math.random() * room.clients.length)]._id
             }
             else{
-            const leader = room.clients.filter(c => c._id !== room.leader._id)[Math.floor(Math.random() * room.clients.length-1)]._id
+                leader = room.clients.filter(c => c._id !== room.leader._id)[Math.floor(Math.random() * (room.clients.length-1))]._id
             }
             return RoomModel.findByIdAndUpdate(room._id, {$set: {leader}}, {new: true}).populate('leader').populate('client')
         })
