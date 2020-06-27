@@ -6,7 +6,7 @@ const updateRoom = (roomName, clientId, changeLeader) => {
     const updateQuery = {$push: {clients: clientId}}
     if(changeLeader) updateQuery.$set = {leader: clientId}
     console.log(updateQuery,changeLeader)
-    return RoomModel.findOneAndUpdate({name: roomName}, updateQuery, {new: true, upsert: true, setDefaultsOnInsert: true})
+    return RoomModel.findOneAndUpdate({name: roomName}, updateQuery, {new: true, upsert: true, setDefaultsOnInsert: true}).populate('leader').populate('clients')
 }
 const createClient = (clientName, socket) => {
     const pattern = `^${clientName}[0-9]*`
@@ -33,7 +33,12 @@ const newLeader = (roomName) => {
         .populate('leader')
         .then( room => {
             console.log(room)
-            const leader = room.clients[Math.floor(Math.random() * room.clients.length)]._id
+            if(!room.leader){
+                const leader = room.clients[Math.floor(Math.random() * room.clients.length)]._id
+            }
+            else{
+            const leader = room.clients.filter(c => c._id !== room.leader._id)[Math.floor(Math.random() * room.clients.length-1)]._id
+            }
             return RoomModel.findByIdAndUpdate(room._id, {$set: {leader}}, {new: true}).populate('leader').populate('client')
         })
         .catch( err => console.error('dbLogic.newLeader(',roomName,')... ',err))
@@ -43,6 +48,9 @@ const isRoomPlaying = (roomName) => {
 }
 const startRoom = (roomName) => {
     return RoomModel.update({name: roomName}, {$set: {isPlaying: true}})
+}
+const pauseRoom = (roomName) => {
+    return RoomModel.update({name: roomName}, {$set: {isPlaying: false}})
 }
 const getLeader = (roomName) => {
     return RoomModel.findOne({name: roomName}, 'leader').populate('leader')
@@ -56,4 +64,4 @@ const getWord = (roomName) => {
 }
     
 
-module.exports = { updateRoom, createClient, deleteClient, newLeader, isRoomPlaying, startRoom, getLeader, setWord, getWord }
+module.exports = { updateRoom, createClient, deleteClient, newLeader, isRoomPlaying, startRoom, getLeader, setWord, getWord, pauseRoom }

@@ -29,12 +29,12 @@ const dbLogic = require('./logic/dbLogic')
 const { db } = require('./models/Room.model')
 const io = require('socket.io')(server)
 
+let newLeaderTimeout, serverRooms = {};
 
 io.on('connect', socket => {
     socket.emit('welcome', { greet: 'hello there'})
     socket.on('join room', ({selectedRoom, clientName, isLeader}) => {
         socket.selectedRoom = selectedRoom
-        console.log('clientName.......',clientName)
         dbLogic.createClient(clientName, socket.id)
             .then( client => {
                 socket.clientName = client.name
@@ -42,9 +42,10 @@ io.on('connect', socket => {
                 socket.emit('assigned name', client.name)
                 socket.join(selectedRoom, ()=> {
                     dbLogic.updateRoom(selectedRoom, client._id, isLeader)
-                        .then( (res) => {
+                        .then( room => {
+                            serverRooms[room.name] = room
                             socket.emit('joined', Object.keys(socket.rooms))
-                            socket.to(selectedRoom).emit('new client', {client})
+                            socket.to(selectedRoom).emit('new client', client)
                         })
                         .catch( err => console.error(err))
                 })
@@ -52,7 +53,6 @@ io.on('connect', socket => {
             .catch( err => console.error(err))
     })
     socket.on('forward signal', (signal, clientName, socketTo) => {
-        console.log(socketTo)
         socket.to(socketTo).emit('signal', signal, clientName, socket.id)
     })
     socket.on('2 clients connected', clients => {
@@ -74,28 +74,62 @@ io.on('connect', socket => {
             })
     })
     socket.on('disconnect', () => {
-        console.log('disconnecting ', socket.clientId)
         dbLogic.deleteClient(socket.clientId)
-        .then( res => console.log(res) )
+        .then( res => {
+            console.log(res)
+            const disconnRoom = serverRooms[socket.selectedRoom]
+            disconnRoom.clients = disconnRoom.clients.filter(c => c._id.toString() != socket.clientId.toString())
+            if(disconnRoom.leader._id === socket.clientId){
+                clearTimeout(newLeaderTimeout)
+                sendNewLeader(socket.selectedRoom)
+            }
+            if(disconnRoom.clients.length < 2){
+                pauseRoom(disconnRoom.name)
+            }
+            io.to(disconnRoom.name).emit('user disconnected', socket.clientName)
+            console.log('disconnRoom.clients.length: ',disconnRoom.clients.length)
+            console.log('disconnRoom.clients: ', disconnRoom.clients)
+            io.to(disconnRoom.name).emit('user disconnnected', socket.clientName)
+        })
         .catch( err => console.error(err) )
     })
 })
 io.on("disconnect", socket => {
     dbLogic.deleteClient(socket.clientId)
-        .then( res => console.log(res) )
+        .then( res => {
+            console.log(res)
+            const disconnRoom = serverRooms[socket.selectedRoom]
+            disconnRoom.clients.filter(c => c._id !== socket.clientId)
+            if(disconnRoom.leader._id === socket.clientId){
+                clearTimeout(newLeaderTimeout)
+                sendNewLeader(disconnRoom.name)
+            }
+            if(disconnRoom.clients.length < 2){
+                pauseRoom(disconnRoom.name)
+            }
+            console.log('disconnRoom.clients.length: ',disconnRoom.clients.length)
+            console.log('disconnRoom.clients: ', disconnRoom.clients)
+            io.to(disconnRoom.name).emit('user disconnnected', socket.clientName)
+        })
         .catch( err => console.error(err) )
 })
+const pauseRoom = (roomName) => {
+    io.to(roomName).emit('room paused', roomName)
+    serverRooms[roomName].isPlaying = false
+    dbLogic.pauseRoom(roomName)
+        .then(res => console.log(res))
+        .catch(err => console.error(err))
+}
 const sendNewLeader = (room) => {
     dbLogic.newLeader(room)
         .then( updatedRoom => {
-            console.log('updatedRoom: ',updatedRoom)
             const nowTime = new Date()
-            const timeFinish = new Date(nowTime.getTime() + 90 * 1000)
+            const timeFinish = new Date(nowTime.getTime() + 80 * 1000)
             const threeWords = randomWords(3)
             io.to(room).emit('new leader', updatedRoom.leader.name)
             io.to(room).emit('finish time', timeFinish)
             io.to(updatedRoom.leader.socket).emit('choose word', threeWords)
-            setTimeout(() => {sendNewLeader(room)}, 90 * 1000)
+            newLeaderTimeout = setTimeout(() => {sendNewLeader(room)}, 80 * 1000)
         })
         .catch( err => console.error(err))
 
