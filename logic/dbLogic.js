@@ -2,8 +2,15 @@ const RoomModel = require('../models/Room.model')
 const ClientModel = require('../models/Client.model')
 const mongoose = require('mongoose')
 
+const dropRooms = () => {
+    return RoomModel.remove({})
+}
+const dropClients = () => {
+    return ClientModel.remove({})
+}
 const updateRoom = (roomName, clientId, changeLeader) => {
-    const updateQuery = {$push: {clients: clientId}}
+    const ranking = {client: clientId, points: 0}
+    const updateQuery = {$push: {clients: clientId, ranking}}
     if(changeLeader) updateQuery.$set = {leader: clientId}
     console.log(updateQuery,changeLeader)
     return RoomModel.findOneAndUpdate({name: roomName}, updateQuery, {new: true, upsert: true, setDefaultsOnInsert: true}).populate('leader').populate('clients')
@@ -20,26 +27,57 @@ const createClient = (clientName, socket) => {
         )
         .catch( err => console.error(err))
 }
-const deleteClient = (clientId) => {
+const deleteClient = (clientId, roomName) => {
     console.log(mongoose.Types.ObjectId(clientId))
     RoomModel.updateMany({}, {$pull: {clients: clientId}})
         .then( res => console.error(res))
         .catch( res => console.error(res))
-    return ClientModel.findByIdAndDelete(clientId)
+    ClientModel.findByIdAndDelete(clientId)
+    .then( res => console.error(res))
+    .catch( res => console.error(res))
+    return RoomModel.find({name: roomName})
+}
+const updateRanking = (clientId, roomId) => {
+    let clientFound = false, leaderFound = false
+    return RoomModel.findById(roomId)
+        .then( ({ranking, timeFinish, roundSeconds, leader}) => {
+            let now = new Date()
+            const points = Math.floor((timeFinish - now.getTime())/1000 )
+            ranking = ranking.map( clientRanking => {
+                console.log('clientRanking=',clientRanking,' clientId=', clientId)
+                if(clientRanking.client.toString() == clientId.toString()){
+                    clientRanking.points += points
+                    clientFound = true
+                }
+                if(clientRanking.client.toString() == leader.toString()){
+                    clientRanking.points += 10
+                    leaderFound = true
+                }
+                return clientRanking
+            })
+            if(!clientFound) ranking.push({client: clientId, points})
+            if(!leaderFound) ranking.push({client: leader, points: 10})
+            return RoomModel.findByIdAndUpdate(roomId, {$set: {ranking}}, {new: true})
+        })
 }
 const newLeader = (roomName) => {
     return RoomModel.findOne({name: roomName})
         .populate('clients')
         .populate('leader')
         .then( room => {
-            let leader;
-            if(!room.leader){
-                leader = room.clients[Math.floor(Math.random() * room.clients.length)]._id
+            const nowTime = new Date()
+            const timeFinish = new Date(nowTime.getTime() + room.roundSeconds * 1000)
+            let roundLeaders = room.roundLeaders
+            let clientsToGo = room.clients.filter(c => !roundLeaders.includes(c._id))
+            let playedRounds = room.playedRounds
+            if(clientsToGo.length === 0){
+                playedRounds++
+                roundLeaders = []
+                clientsToGo = room.clients
             }
-            else{
-                leader = room.clients.filter(c => c._id !== room.leader._id)[Math.floor(Math.random() * (room.clients.length-1))]._id
-            }
-            return RoomModel.findByIdAndUpdate(room._id, {$set: {leader}}, {new: true}).populate('leader').populate('client')
+            const leader = clientsToGo[Math.floor(Math.random() * clientsToGo.length)]
+            roundLeaders = [leader._id, ...roundLeaders]
+            return RoomModel.findByIdAndUpdate(room._id, {$set: {leader: leader, roundLeaders: roundLeaders, playedRounds: playedRounds, timeFinish: timeFinish}}, {new: true}).populate('leader').populate('client').populate('ranking.client').sort('-ranking.points')
         })
         .catch( err => console.error('dbLogic.newLeader(',roomName,')... ',err))
 }
@@ -60,8 +98,8 @@ const setWord = (word, roomName) => {
     return RoomModel.updateOne({name: roomName}, {$set: {word: word}})
 }
 const getWord = (roomName) => {
-    return RoomModel.findOne({name: roomName}, 'word')
+    return RoomModel.findOne({name: roomName}, 'word _id')
 }
     
 
-module.exports = { updateRoom, createClient, deleteClient, newLeader, isRoomPlaying, startRoom, getLeader, setWord, getWord, pauseRoom }
+module.exports = { updateRoom, createClient, deleteClient, newLeader, isRoomPlaying, startRoom, getLeader, setWord, getWord, pauseRoom, updateRanking, dropRooms, dropClients }
