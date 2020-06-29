@@ -77,7 +77,7 @@ const newLeader = (roomName) => {
             }
             const leader = clientsToGo[Math.floor(Math.random() * clientsToGo.length)]
             roundLeaders = [leader._id, ...roundLeaders]
-            return RoomModel.findByIdAndUpdate(room._id, {$set: {leader: leader, roundLeaders: roundLeaders, playedRounds: playedRounds, timeFinish: timeFinish}}, {new: true}).populate('leader').populate('client').populate('ranking.client').sort('-ranking.points')
+            return RoomModel.findByIdAndUpdate(room._id, {$set: {leader: leader, roundLeaders: roundLeaders, playedRounds: playedRounds, timeFinish: timeFinish}}, {new: true}).populate('leader').populate('client').populate('ranking.client')
         })
         .catch( err => console.error('dbLogic.newLeader(',roomName,')... ',err))
 }

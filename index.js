@@ -146,6 +146,7 @@ const pauseRoom = (roomName) => {
 const sendNewLeader = (roomName) => {
     dbLogic.newLeader(roomName)
         .then( updatedRoom => {
+            updatedRoom.ranking.sort( (a,b) => a.points - b.points)
             const threeWords = randomWords(3)
             if(updatedRoom.totalRounds === updatedRoom.playedRounds-1){
                 io.to(roomName).emit('game ended', updatedRoom.ranking)
