@@ -71,7 +71,7 @@ io.on('connect', socket => {
                 socket.clientId = client._id
                 socket.emit('assigned name', client.name)
                 socket.join(selectedRoom, ()=> {
-                    dbLogic.updateRoom(selectedRoom, client._id, isLeader)
+                    dbLogic.updateRoom(selectedRoom, client._id, client.name, isLeader)
                         .then( room => {
                             socket.emit('joined', {currentLeader: room.leader.name, timeFinish: room.timeFinish})
                             socket.to(selectedRoom).emit('new client', client)

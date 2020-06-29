@@ -8,8 +8,8 @@ const dropRooms = () => {
 const dropClients = () => {
     return ClientModel.remove({})
 }
-const updateRoom = (roomName, clientId, changeLeader) => {
-    const ranking = {client: clientId, points: 0}
+const updateRoom = (roomName, clientId, clientName, changeLeader) => {
+    const ranking = {client: clientName, points: 0}
     const updateQuery = {$push: {clients: clientId, ranking}}
     if(changeLeader) updateQuery.$set = {leader: clientId}
     console.log(updateQuery,changeLeader)
