@@ -44,9 +44,8 @@ const roomSchema = new Schema(
             default: null
         },
         ranking: [{
-            client: {
-                type: Schema.Types.ObjectId,
-                ref: 'Client'
+            clientName: {
+                type: String
             },
             points: {
                 type: Number,

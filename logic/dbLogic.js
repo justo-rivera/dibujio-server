@@ -37,19 +37,20 @@ const deleteClient = (clientId, roomName) => {
     .catch( res => console.error(res))
     return RoomModel.find({name: roomName})
 }
-const updateRanking = (clientId, roomId) => {
+const updateRanking = (clientName, roomId) => {
     let clientFound = false, leaderFound = false
     return RoomModel.findById(roomId)
+        .populate('leader')
         .then( ({ranking, timeFinish, roundSeconds, leader}) => {
             let now = new Date()
             const points = Math.floor((timeFinish - now.getTime())/1000 )
             ranking = ranking.map( clientRanking => {
-                console.log('clientRanking=',clientRanking,' clientId=', clientId)
-                if(clientRanking.client.toString() == clientId.toString()){
+                console.log('clientRanking=',clientRanking,' clientName=', clientName)
+                if(clientRanking.client === clientName){
                     clientRanking.points += points
                     clientFound = true
                 }
-                if(clientRanking.client.toString() == leader.toString()){
+                if(clientRanking.client === leader.name){
                     clientRanking.points += 10
                     leaderFound = true
                 }
@@ -77,7 +78,7 @@ const newLeader = (roomName) => {
             }
             const leader = clientsToGo[Math.floor(Math.random() * clientsToGo.length)]
             roundLeaders = [leader._id, ...roundLeaders]
-            return RoomModel.findByIdAndUpdate(room._id, {$set: {leader: leader, roundLeaders: roundLeaders, playedRounds: playedRounds, timeFinish: timeFinish}}, {new: true}).populate('leader').populate('client').populate('ranking.client')
+            return RoomModel.findByIdAndUpdate(room._id, {$set: {leader: leader, roundLeaders: roundLeaders, playedRounds: playedRounds, timeFinish: timeFinish}}, {new: true}).populate('leader').populate('client')
         })
         .catch( err => console.error('dbLogic.newLeader(',roomName,')... ',err))
 }

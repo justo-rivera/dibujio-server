@@ -95,7 +95,7 @@ io.on('connect', socket => {
             .then( ({word, _id}) => {
                 if(word === message){
                     io.in(socket.selectedRoom).emit('correct guess', socket.clientName)
-                    updateRanking(socket.clientId, _id)
+                    updateRanking(socket.clientName, _id)
                 }
                 else{
                     console.log(word,'!==', message)
@@ -155,14 +155,14 @@ const sendNewLeader = (roomName) => {
                 io.to(roomName).emit('new leader', {leader: updatedRoom.leader.name, ranking: updatedRoom.ranking})
                 io.to(roomName).emit('finish time', updatedRoom.timeFinish)
                 io.to(updatedRoom.leader.socket).emit('choose word', threeWords)
-                newLeaderTimeout = setTimeout(() => {sendNewLeader(roomName)}, 80 * 1000)
+                newLeaderTimeout = setTimeout(() => {sendNewLeader(roomName)}, updatedRoom.roundSeconds * 1000)
             }
         })
         .catch( err => console.error(err))
 
 }
-const updateRanking = (clientId, roomId) => {
-    dbLogic.updateRanking(clientId, roomId)
+const updateRanking = (clientName, roomId) => {
+    dbLogic.updateRanking(clientName, roomId)
         .then( res => console.log(res))
         .catch( err => console.log(err))
 }
