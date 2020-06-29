@@ -162,6 +162,7 @@ const sendNewLeader = (roomName) => {
 
 }
 const updateRanking = (clientName, roomId) => {
+    console.log('update ranking clientName', clientName)
     dbLogic.updateRanking(clientName, roomId)
         .then( res => console.log(res))
         .catch( err => console.log(err))

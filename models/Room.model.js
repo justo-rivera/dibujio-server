@@ -44,7 +44,7 @@ const roomSchema = new Schema(
             default: null
         },
         ranking: [{
-            clientName: {
+            client: {
                 type: String
             },
             points: {

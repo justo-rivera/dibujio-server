@@ -9,6 +9,7 @@ const dropClients = () => {
     return ClientModel.remove({})
 }
 const updateRoom = (roomName, clientId, clientName, changeLeader) => {
+    console.log('updateRoom clientName...', clientName)
     const ranking = {client: clientName, points: 0}
     const updateQuery = {$push: {clients: clientId, ranking}}
     if(changeLeader) updateQuery.$set = {leader: clientId}
@@ -56,8 +57,8 @@ const updateRanking = (clientName, roomId) => {
                 }
                 return clientRanking
             })
-            if(!clientFound) ranking.push({client: clientId, points})
-            if(!leaderFound) ranking.push({client: leader, points: 10})
+            if(!clientFound) ranking.push({client: clientName, points})
+            if(!leaderFound) ranking.push({client: leader.name, points: 10})
             return RoomModel.findByIdAndUpdate(roomId, {$set: {ranking}}, {new: true})
         })
 }
