@@ -4,7 +4,8 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost/dibujio'
 const session = require('express-session')
 const MongoStore = require('connect-mongo')(session)
 
-const words = require('./data/palabras.json')
+//const words = require('./data/palabras.json')
+const words = require('./data/words.json')
 const wordsLength = words.length
 
 const express = require('express')
@@ -95,7 +96,7 @@ io.on('connect', socket => {
     socket.on('message', message =>{
         dbLogic.getWord(socket.selectedRoom)
             .then( ({word, _id}) => {
-                if(word === message){
+                if(word.toLowerCase() === message.toLowerCase()){
                     io.in(socket.selectedRoom).emit('correct guess', socket.clientName)
                     updateRanking(socket.clientName, _id)
                 }
@@ -148,13 +149,13 @@ const pauseRoom = (roomName) => {
 const sendNewLeader = (roomName) => {
     dbLogic.newLeader(roomName)
         .then( updatedRoom => {
-            updatedRoom.ranking.sort( (a,b) => a.points - b.points)
+            updatedRoom.ranking.sort( (a,b) => b.points - a.points)
             const threeWords = randomWords(3)
             if(updatedRoom.totalRounds === updatedRoom.playedRounds-1){
                 io.to(roomName).emit('game ended', updatedRoom.ranking)
             }
             else{
-                io.to(roomName).emit('new leader', {leader: updatedRoom.leader.name, ranking: updatedRoom.ranking})
+                io.to(roomName).emit('new leader', {leader: updatedRoom.leader.name, ranking: updatedRoom.ranking, lastWord: updatedRoom.word})
                 io.to(roomName).emit('finish time', updatedRoom.timeFinish)
                 io.to(updatedRoom.leader.socket).emit('choose word', threeWords)
                 newLeaderTimeout = setTimeout(() => {sendNewLeader(roomName)}, updatedRoom.roundSeconds * 1000)
