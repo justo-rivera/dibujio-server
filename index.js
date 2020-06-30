@@ -1,6 +1,8 @@
 require('dotenv').config()
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost/dibujio'
 
 const session = require('express-session')
+const MongoStore = require('connect-mongo')(session)
 
 const words = require('./data/palabras.json')
 const wordsLength = words.length
@@ -14,23 +16,23 @@ require('./configs/db.config')
 const app = express()
 const cors = require('cors')
 app.use(cors())
-// app.use(
-//     session({
-//       secret: 'pictionario1234',
-//       saveUninitialized: true,
-//       resave: true,
-//       cookie: {
-//         maxAge: 60 * 60 * 24 * 1000, //60 sec * 60 min * 24hrs = 1 day (in milliseconds)
-//       },
-//       store: new MongoStore({
-//         url: MONGODB_URI,
-//         // mongooseConnection: mongoose.connection
-//         //time to live (in seconds)
-//         ttl: 60 * 60 * 24,
-//         autoRemove: 'disabled',
-//       }),
-//     })
-// )
+app.use(
+    session({
+      secret: 'pictionario1234',
+      saveUninitialized: true,
+      resave: true,
+      cookie: {
+        maxAge: 60 * 60 * 24 * 1000, //60 sec * 60 min * 24hrs = 1 day (in milliseconds)
+      },
+      store: new MongoStore({
+        url: MONGODB_URI,
+        // mongooseConnection: mongoose.connection
+        //time to live (in seconds)
+        ttl: 60 * 60 * 24,
+        autoRemove: 'disabled',
+      }),
+    })
+)
 // a body parser to allow us to parse form submissions
 const bodyParser = require('body-parser');
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -39,12 +41,12 @@ app.use(bodyParser.json()) //crucial for post requests from client
 //api routes
 const apiRoutes = require('./routes/api.routes')
 app.use('/api', apiRoutes)
-// //auth routes
-// const authRoutes = require('./routes/auth.routes')
-// app.use('/profile', authRoutes);
-// //auth upload image routes
-// const fileUploads = require('./routes/file-upload.routes')
-// app.use('/profile', fileUploads)
+//auth routes
+const authRoutes = require('./routes/auth.routes')
+app.use('/profile', authRoutes);
+//auth upload image routes
+const fileUploads = require('./routes/file-upload.routes')
+app.use('/profile', fileUploads)
 
 const server = app.listen(process.env.PORT, () => {
     console.log('Server is running on ',process.env.PORT)

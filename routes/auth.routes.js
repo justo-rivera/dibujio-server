@@ -9,41 +9,32 @@ const UserModel = require('../models/User.model');
 const { isLoggedIn } = require('../helpers/auth-helper'); // to check if user is loggedIn
 
 router.post('/signup', (req, res) => {
-    const {username, email, password } = req.body;
-    console.log(username, email, password);
+    const {name, password } = req.body;
+    console.log(name, password);
  
-    if (!username || !email || !password) {
+    if (!name || !password) {
         res.status(500)
           .json({
-            errorMessage: 'Please enter username, email and password'
+            errorMessage: 'Please enter username and password'
           });
         return;  
     }
 
-    const myRegex = new RegExp(/^[a-z0-9](?!.*?[^\na-z0-9]{2})[^\s@]+@[^\s@]+\.[^\s@]+[a-z0-9]$/);
-    if (!myRegex.test(email)) {
-        res.status(500)
-          .json({
-            errorMessage: 'Email format not correct'
-        });
-        return;  
-    }
-
-    const myPassRegex = new RegExp(/^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])(?=.{8,})/);
-    if (!myPassRegex.test(password)) {
-      res.status(500)
-          .json({
-            errorMessage: 'Password needs to have 8 characters, a number and an Uppercase alphabet'
-          });
-        return;  
-    }
+    // const myPassRegex = new RegExp(/^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])(?=.{8,})/);
+    // if (!myPassRegex.test(password)) {
+    //   res.status(500)
+    //       .json({
+    //         errorMessage: 'Password needs to have 8 characters, a number and an Uppercase alphabet'
+    //       });
+    //     return;  
+    // }
 
     bcrypt.genSalt(12)
       .then((salt) => {
         console.log('Salt: ', salt);
         bcrypt.hash(password, salt)
           .then((passwordHash) => {
-            UserModel.create({email, username, passwordHash})
+            UserModel.create({name, passwordHash})
               .then((user) => {
                 user.passwordHash = "***";
                 req.session.loggedInUser = user;
@@ -54,7 +45,7 @@ router.post('/signup', (req, res) => {
                 if (err.code === 11000) {
                   res.status(500)
                   .json({
-                    errorMessage: 'username or email entered already exists!'
+                    errorMessage: 'username or name entered already exists!'
                   });
                   return;  
                 } 
@@ -72,22 +63,22 @@ router.post('/signup', (req, res) => {
 });
  
 router.post('/signin', (req, res) => {
-    const {email, password } = req.body;
-    if ( !email || !password) {
+    const {name, password } = req.body;
+    if ( !name || !password) {
         res.status(500).json({
-            error: 'Please enter Username. email and password',
+            error: 'Please enter name and password',
        })
       return;  
     }
-    const myRegex = new RegExp(/^[a-z0-9](?!.*?[^\na-z0-9]{2})[^\s@]+@[^\s@]+\.[^\s@]+[a-z0-9]$/);
-    if (!myRegex.test(email)) {
-        res.status(500).json({
-            error: 'Email format not correct',
-        })
-        return;  
-    }
+    // const myRegex = new RegExp(/^[a-z0-9](?!.*?[^\na-z0-9]{2})[^\s@]+@[^\s@]+\.[^\s@]+[a-z0-9]$/);
+    // if (!myRegex.test(name)) {
+    //     res.status(500).json({
+    //         error: 'name format not correct',
+    //     })
+    //     return;  
+    // }
     // Find if the user exists in the database 
-    UserModel.findOne({email})
+    UserModel.findOne({name})
       .then((userData) => {
            //check if passwords match
           console.log(password)
@@ -112,7 +103,7 @@ router.post('/signin', (req, res) => {
             .catch((err) => {
               console.log(err)
                 res.status(500).json({
-                    error: 'Email format not correct',
+                    error: 'name format not correct',
                 })
               return; 
             });
@@ -120,7 +111,7 @@ router.post('/signin', (req, res) => {
       //throw an error if the user does not exists 
       .catch((err) => {
         res.status(500).json({
-            error: 'Email format is not correct',
+            error: 'name format is not correct',
             message: err
         })
         return;  
