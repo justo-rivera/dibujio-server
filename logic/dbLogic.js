@@ -29,14 +29,13 @@ const createClient = (clientName, socket) => {
         .catch( err => console.error(err))
 }
 const deleteClient = (clientId, roomName) => {
-    console.log(mongoose.Types.ObjectId(clientId))
-    RoomModel.updateMany({}, {$pull: {clients: clientId}})
-        .then( res => console.error(res))
-        .catch( res => console.error(res))
+    RoomModel.updateMany({}, {$pull: {clients: clientId, roundLeaders: clientId}}, {new: true})
+    .then( res => console.log(res))
+    .catch( res => console.error(res))
     ClientModel.findByIdAndDelete(clientId)
     .then( res => console.error(res))
     .catch( res => console.error(res))
-    return RoomModel.find({name: roomName})
+    return RoomModel.findOne({name: roomName})
 }
 const updateRanking = (clientName, roomId) => {
     let clientFound = false, leaderFound = false
@@ -46,7 +45,6 @@ const updateRanking = (clientName, roomId) => {
             let now = new Date()
             const points = Math.floor((timeFinish - now.getTime())/1000 )
             ranking = ranking.map( clientRanking => {
-                console.log('clientRanking=',clientRanking,' clientName=', clientName)
                 if(clientRanking.client === clientName){
                     clientRanking.points += points
                     clientFound = true
@@ -90,7 +88,7 @@ const startRoom = (roomName) => {
     return RoomModel.update({name: roomName}, {$set: {isPlaying: true}})
 }
 const pauseRoom = (roomName) => {
-    return RoomModel.update({name: roomName}, {$set: {isPlaying: false}})
+    return RoomModel.update({name: roomName}, {$set: {isPlaying: false, word: '', leader: null}})
 }
 const getLeader = (roomName) => {
     return RoomModel.findOne({name: roomName}, 'leader').populate('leader')
@@ -100,7 +98,7 @@ const setWord = (word, roomName) => {
     return RoomModel.updateOne({name: roomName}, {$set: {word: word}})
 }
 const getWord = (roomName) => {
-    return RoomModel.findOne({name: roomName}, 'word _id')
+    return RoomModel.findOne({name: roomName}, 'word _id leader')
 }
     
 

@@ -76,8 +76,10 @@ io.on('connect', socket => {
                 socket.join(selectedRoom, ()=> {
                     dbLogic.updateRoom(selectedRoom, client._id, client.name, isLeader)
                         .then( room => {
-                            socket.emit('joined', {currentLeader: room.leader.name, timeFinish: room.timeFinish})
-                            socket.to(selectedRoom).emit('new client', client)
+                            if(room.leader && room.timeFinish){
+                                socket.emit('joined', {currentLeader: room.leader.name, timeFinish: room.timeFinish})
+                            }
+                            socket.to(selectedRoom).emit('new client', client.name)
                         })
                         .catch( err => console.error(err))
                 })
@@ -88,17 +90,22 @@ io.on('connect', socket => {
         socket.to(socketTo).emit('signal', signal, clientName, socket.id)
     })
     socket.on('2 clients connected', clients => {
-        startRoom(socket.selectedRoom)
+    dbLogic.isRoomPlaying(socket.selectedRoom)
+        .then( ({isPlaying}) => {
+            if(isPlaying === false) startRoom(socket.selectedRoom)
+        })
     })
     socket.on('chose word', word => {
         setWord(socket.clientName, socket.selectedRoom, word)
     })
     socket.on('message', message =>{
         dbLogic.getWord(socket.selectedRoom)
-            .then( ({word, _id}) => {
+            .then( ({word, _id, leader}) => {
                 if(word.toLowerCase() === message.toLowerCase()){
-                    io.in(socket.selectedRoom).emit('correct guess', socket.clientName)
-                    updateRanking(socket.clientName, _id)
+                    if(socket.clientId.toString() !== leader.toString()){
+                        io.in(socket.selectedRoom).emit('correct guess', socket.clientName)
+                        updateRanking(socket.clientName, _id)
+                    }
                 }
                 else{
                     console.log(word,'!==', message)
@@ -112,14 +119,11 @@ io.on('connect', socket => {
             if(room.clients.length < 2){
                 pauseRoom(room.name)
             }
-            else if(room.leader._id === socket.clientId){
+            else if(room.leader.toString() === socket.clientId.toString()){
                 clearTimeout(newLeaderTimeout)
                 sendNewLeader(socket.selectedRoom)
             }
-            io.to(room.name).emit('user disconnected', socket.clientName)
-            console.log('disconnRoom.clients.length: ',room.clients.length)
-            console.log('disconnRoom.clients: ', room.clients)
-            io.to(room.name).emit('user disconnnected', socket.clientName)
+            io.to(room.name).emit('client left', socket.clientName)
         })
         .catch( err => console.error(err) )
     })
@@ -127,8 +131,8 @@ io.on('connect', socket => {
 const startRoom = (room) => {
     console.log('startRoom(',room,') called!')
     dbLogic.isRoomPlaying(room)
-    .then( foundRoom => {
-        if(!foundRoom.isPlaying){
+    .then( ({isPlaying}) => {
+        if(isPlaying === false){
             dbLogic.startRoom(room)
                 .then( () => {
 
@@ -141,7 +145,7 @@ const startRoom = (room) => {
 }
 const pauseRoom = (roomName) => {
     io.to(roomName).emit('room paused', roomName)
-    serverRooms[roomName].isPlaying = false
+    clearTimeout(newLeaderTimeout)
     dbLogic.pauseRoom(roomName)
         .then(res => console.log(res))
         .catch(err => console.error(err))
@@ -151,12 +155,11 @@ const sendNewLeader = (roomName) => {
         .then( updatedRoom => {
             updatedRoom.ranking.sort( (a,b) => b.points - a.points)
             const threeWords = randomWords(3)
-            if(updatedRoom.totalRounds === updatedRoom.playedRounds-1){
+            if(updatedRoom.totalRounds === updatedRoom.playedRounds){
                 io.to(roomName).emit('game ended', updatedRoom.ranking)
             }
             else{
-                io.to(roomName).emit('new leader', {leader: updatedRoom.leader.name, ranking: updatedRoom.ranking, lastWord: updatedRoom.word})
-                io.to(roomName).emit('finish time', updatedRoom.timeFinish)
+                io.to(roomName).emit('new leader', {leader: updatedRoom.leader.name, ranking: updatedRoom.ranking, timeFinish: updatedRoom.timeFinish, lastWord: updatedRoom.word})
                 io.to(updatedRoom.leader.socket).emit('choose word', threeWords)
                 newLeaderTimeout = setTimeout(() => {sendNewLeader(roomName)}, updatedRoom.roundSeconds * 1000)
             }
