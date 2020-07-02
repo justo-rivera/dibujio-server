@@ -116,11 +116,12 @@ io.on('connect', socket => {
     socket.on('disconnect', () => {
         dbLogic.deleteClient(socket.clientId, socket.selectedRoom)
         .then( room => {
-            if(room.leader.toString() === socket.clientId.toString()){
+            if(room.leader.toString() === socket.clientId.toString() && room.clients.length > 1){
                 clearTimeout(newLeaderTimeout)
                 sendNewLeader(socket.selectedRoom)
             }
             if(room.clients.length < 2){
+                clearTimeout(newLeaderTimeout)
                 pauseRoom(room.name)
             }
             io.to(room.name).emit('client left', socket.clientName)
