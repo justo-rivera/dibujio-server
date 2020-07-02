@@ -9,20 +9,16 @@ const dropClients = () => {
     return ClientModel.remove({})
 }
 const updateRoom = (roomName, clientId, clientName, changeLeader) => {
-    console.log('updateRoom clientName...', clientName)
     const ranking = {client: clientName, points: 0}
     const updateQuery = {$push: {clients: clientId, ranking}}
     if(changeLeader) updateQuery.$set = {leader: clientId}
-    console.log(updateQuery,changeLeader)
     return RoomModel.findOneAndUpdate({name: roomName}, updateQuery, {new: true, upsert: true, setDefaultsOnInsert: true}).populate('leader').populate('clients')
 }
 const createClient = (clientName, socket) => {
     const pattern = `^${clientName}[0-9]*`
-    console.log(pattern)
     return ClientModel.countDocuments({name: {$regex: pattern}})
         .then( (sameNames) => {
             if(sameNames>0) clientName+=sameNames
-            console.log(sameNames)
             return ClientModel.create({name: clientName, socket})
         }
         )
@@ -85,17 +81,16 @@ const isRoomPlaying = (roomName) => {
     return RoomModel.findOne({name: roomName}, 'isPlaying')
 }
 const startRoom = (roomName) => {
-    return RoomModel.update({name: roomName}, {$set: {isPlaying: true}})
+    return RoomModel.updateOne({name: roomName}, {$set: {isPlaying: true}})
 }
 const pauseRoom = (roomName) => {
-    return RoomModel.update({name: roomName}, {$set: {isPlaying: false, word: '', leader: null}})
+    return RoomModel.updateOne({name: roomName}, {$set: {isPlaying: false, word: '', leader: null, timeFinish: null}})
 }
 const getLeader = (roomName) => {
     return RoomModel.findOne({name: roomName}, 'leader').populate('leader')
 }
 const setWord = (word, roomName) => {
-    console.log('RoomModel.updateOne({name: ',roomName,'}, {$set: {word: ',word,'}})')
-    return RoomModel.updateOne({name: roomName}, {$set: {word: word}})
+    return RoomModel.updateOne({name: roomName}, {$set: {word}})
 }
 const getWord = (roomName) => {
     return RoomModel.findOne({name: roomName}, 'word _id leader')

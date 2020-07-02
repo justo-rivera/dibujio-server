@@ -156,7 +156,10 @@ const sendNewLeader = (roomName) => {
             updatedRoom.ranking.sort( (a,b) => b.points - a.points)
             const threeWords = randomWords(3)
             if(updatedRoom.totalRounds === updatedRoom.playedRounds){
-                io.to(roomName).emit('game ended', updatedRoom.ranking)
+                dbLogic.endRoom(roomName)
+                    .then( roomFinal => {
+                        io.to(roomName).emit('game ended', {ranking: roomFinal.ranking, lastWord: roomFinal.word})
+                    })
             }
             else{
                 io.to(roomName).emit('new leader', {leader: updatedRoom.leader.name, ranking: updatedRoom.ranking, timeFinish: updatedRoom.timeFinish, lastWord: updatedRoom.word})
