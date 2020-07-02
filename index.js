@@ -158,7 +158,7 @@ const sendNewLeader = (roomName) => {
             if(updatedRoom.totalRounds === updatedRoom.playedRounds){
                 dbLogic.endRoom(roomName)
                     .then( roomFinal => {
-                        io.to(roomName).emit('game ended', {ranking: roomFinal.ranking, lastWord: roomFinal.word})
+                        io.to(roomName).emit('game ended', {ranking: updatedRoom.ranking, lastWord: updatedRoom.word})
                     })
             }
             else{

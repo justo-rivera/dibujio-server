@@ -11,7 +11,6 @@ const dropClients = () => {
 const updateRoom = (roomName, clientId, clientName, changeLeader) => {
     const ranking = {client: clientName, points: 0}
     const updateQuery = {$push: {clients: clientId, ranking}}
-    if(changeLeader) updateQuery.$set = {leader: clientId}
     return RoomModel.findOneAndUpdate({name: roomName}, updateQuery, {new: true, upsert: true, setDefaultsOnInsert: true}).populate('leader').populate('clients')
 }
 const createClient = (clientName, socket) => {
@@ -84,7 +83,7 @@ const startRoom = (roomName) => {
     return RoomModel.updateOne({name: roomName}, {$set: {isPlaying: true}})
 }
 const pauseRoom = (roomName) => {
-    return RoomModel.updateOne({name: roomName}, {$set: {isPlaying: false, word: '', leader: null, timeFinish: null}})
+    return RoomModel.updateOne({name: roomName}, {$set: {isPlaying: false, word: '', leader: null, timeFinish: null, playedRounds: 0, roundLeaders: [], ranking: []}})
 }
 const getLeader = (roomName) => {
     return RoomModel.findOne({name: roomName}, 'leader').populate('leader')
@@ -95,6 +94,9 @@ const setWord = (word, roomName) => {
 const getWord = (roomName) => {
     return RoomModel.findOne({name: roomName}, 'word _id leader')
 }
+const endRoom = (roomName) => {
+    return RoomModel.updateOne({name: roomName}, {$set: {isPlaying: false, word: '', leader: null, timeFinish: null, playedRounds: 0, roundLeaders: [], ranking: [], clients: []}})
+}
     
 
-module.exports = { updateRoom, createClient, deleteClient, newLeader, isRoomPlaying, startRoom, getLeader, setWord, getWord, pauseRoom, updateRanking, dropRooms, dropClients }
+module.exports = { updateRoom, createClient, deleteClient, newLeader, isRoomPlaying, startRoom, getLeader, setWord, getWord, pauseRoom, updateRanking, dropRooms, dropClients, endRoom }
