@@ -1,54 +1,21 @@
-### Dibujio
+## DRAW & GUESS
 
-choose a word, draw! peers have to guess it
-
-http://pictionar-io.herokuapp.com/
-
-## User Stories
+# [PICTIONAR-IO.HEROKUAPP.COM](PICTIONAR-IO.HEROKUAPP.COM)
+  
+  
+  
 
 A user creates a room and shares the link with their friends. Every 30 seconds a leader of the room is chosen, he selects a word and has the ability to draw on the canvas. What he draws is seen by the rest of the room, they can use the chat to try to guess the word.
 
--  **404:** Room doesn't exist, do you want to create it?
--  **Signup:** create your account
--  **Login:** login to create/join rooms
--  **Logout:** end your session
--  **Create room** input the name of your room and select the type (guess the word, draw together, annotate image)
--  **Join room** as a user i get an invite to '/roomName' where i can join other people and play 
 
-
-## Backlog
-
-User profile:
-- see past games with a snapshot of words and final drawing
-
-Different type of rooms:
-- collaborative drawing, annotate an image, draw with voice chat...
-  
-# Client
-
-## Routes
+### Routes
 
 - / - List of public rooms (Homepage)
-- /auth/signup - Signup form
-- /auth/login - Login form
 - /ROOM-NAME - Join 'ROOM-NAME' room
 - /new - Create a new room
-- /profile/me - my details and past games
-- 404
 
-## Pages
+### Components
 
-- Home Page (public)
-- Sign up Page (anon only)
-- Log in Page (anon only)
-- Create room (user only)
-- Room (public?)
-- 404 Page (public)
-
-## Components
-
-- App
-    - Initialize sockets and states
 - Room 
     - Join a room, connect to the peers
     - Children: Canvas, Chat
@@ -58,26 +25,23 @@ Different type of rooms:
 - Chat
     - Communicate with your room
 
-## IO
+## I/O
 
 
-## Services
-
-- Auth Service
-  - auth.login(user)
-  - auth.signup(user)
-  - auth.logout()
-  - auth.me()
-  - auth.getUser() // synchronous
+### Services
 - Socket/Room Service
   - room.start()
   - room.create(room-name)
   - room.changeLeader(room-name)
   - room.save(room-name)
 
-# Server
+# CLIENT (WebRTC)
 
-## Models
+# [github.com/justo-rivera/WEBRTC-SKRIBBLIO-CLONE](WEBRTEC-SKRIBBLIO-CLONE)
+---
+---
+---
+#### models
 
 User model
 
@@ -138,22 +102,5 @@ leader - [ObjectID<Client>]
     - create a room
 
   
-
-## Links
-
-### Trello
-
-[Link to your trello board](https://trello.com/b/gb2DdpJV/dibujio) or picture of your physical board
-
-### Git
-
-The url to your repository and to your deployed project
-
-[Client repository Link](http://github.com/justo-rivera/dibujio-client)
-[Server repository Link](http://github.com/justo-rivera/dibujio-server)
-
-[Deploy Link](http://dibujio-client.herokuapp.com)
-
-### Slides
 
 
