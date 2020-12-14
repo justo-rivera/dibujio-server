@@ -40,7 +40,6 @@ A user creates a room and shares the link with their friends. Every 30 seconds a
 # [github.com/justo-rivera/WEBRTC-SKRIBBLIO-CLONE](WEBRTEC-SKRIBBLIO-CLONE)
 ---
 ---
----
 #### models
 
 User model
